@@ -3,8 +3,11 @@ do
 	local ok, current = pcall(function()
 		return script
 	end)
-	if ok and current ~= nil and current.Parent ~= nil then
-		local child = current.Parent:FindFirstChild("load")
+	if ok and current ~= nil then
+		local child = current:FindFirstChild("load")
+		if child == nil and current.Parent ~= nil then
+			child = current.Parent:FindFirstChild("load")
+		end
 		if child ~= nil then
 			load = require(child)
 		end
