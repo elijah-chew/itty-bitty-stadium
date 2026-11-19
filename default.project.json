@@ -1,0 +1,19 @@
+{
+  "name": "itty-bitty-stadium",
+  "tree": {
+    "$className": "DataModel",
+    "ReplicatedStorage": {
+      "Simulation": {
+        "$path": "src/simulation"
+      }
+    },
+    "ServerScriptService": {
+      "$path": "src/server"
+    },
+    "StarterPlayer": {
+      "StarterPlayerScripts": {
+        "$path": "src/client"
+      }
+    }
+  }
+}
