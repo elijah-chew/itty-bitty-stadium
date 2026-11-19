@@ -2,8 +2,32 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
-local Simulation = require(ReplicatedStorage:WaitForChild("Simulation"))
 local Map = require(script.Parent:WaitForChild("Map"))
+local plots = Map.build()
+
+local function bringToLobby(player)
+	local character = player.Character
+	if character == nil then
+		character = player.CharacterAdded:Wait()
+	end
+	local lobby = workspace:FindFirstChild("Lobby")
+	local arrival = lobby and lobby:FindFirstChild("Arrival")
+	if arrival ~= nil and character ~= nil then
+		character:PivotTo(arrival.CFrame + Vector3.new(0, 5, 0))
+	end
+end
+
+for _, player in ipairs(Players:GetPlayers()) do
+	task.defer(bringToLobby, player)
+end
+
+local loaded, Simulation = pcall(function()
+	return require(ReplicatedStorage:WaitForChild("Simulation"))
+end)
+if not loaded then
+	Map.fault(tostring(Simulation))
+	error(Simulation)
+end
 
 local Catalog = Simulation.Catalog
 local Club = Simulation.Club
@@ -17,7 +41,6 @@ local SideTasks = Simulation.SideTasks
 local Events = Simulation.Events
 local Venue = Simulation.Venue
 
-local plots = Map.build()
 local server = Session.newServer()
 local profiles = {}
 
