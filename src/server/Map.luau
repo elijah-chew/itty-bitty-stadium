@@ -61,7 +61,33 @@ local function sign(parent, text, size)
 	parent.Size = size
 end
 
+function Map.fault(message)
+	local lobby = workspace:FindFirstChild("Lobby")
+	local board = lobby and lobby:FindFirstChild("Board")
+	if board == nil then
+		return
+	end
+	local gui = board:FindFirstChildOfClass("SurfaceGui")
+	local label = gui and gui:FindFirstChildOfClass("TextLabel")
+	if label ~= nil then
+		label.TextScaled = false
+		label.TextSize = 28
+		label.TextWrapped = true
+		label.Text = message
+	end
+end
+
 function Map.build()
+	local baseplate = workspace:FindFirstChild("Baseplate")
+	if baseplate ~= nil then
+		baseplate:Destroy()
+	end
+	for _, child in ipairs(workspace:GetChildren()) do
+		if child:IsA("SpawnLocation") then
+			child:Destroy()
+		end
+	end
+
 	local oldLobby = workspace:FindFirstChild("Lobby")
 	if oldLobby ~= nil then
 		oldLobby:Destroy()
