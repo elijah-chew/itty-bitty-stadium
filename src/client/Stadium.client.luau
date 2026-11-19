@@ -147,8 +147,29 @@ local function panel(parent, colour)
 	frame.BorderSizePixel = 0
 	frame.Parent = parent
 	corner(frame, 16)
+	local stroke = Instance.new("UIStroke")
+	stroke.Color = Color3.fromRGB(32, 36, 42)
+	stroke.Transparency = 0.88
+	stroke.Thickness = 1
+	stroke.Parent = frame
 	return frame
 end
+
+local REASONS = {
+	["no grass"] = "Lay a rectangle of grass first.",
+	["goals"] = "Put one goal in the middle of each end.",
+	["not a rectangle"] = "The grass has to be one solid rectangle.",
+	["too small"] = "That pitch is too small for a match.",
+	["off the pitch"] = "Stands sit on the edge, after the pitch is valid.",
+	["out of bounds"] = "That square is outside your land. Expand to open more.",
+	["occupied"] = "Something is already on that square.",
+	["not enough cash"] = "Not enough cash.",
+	["pitch pass"] = "An 11v11 pitch needs the expansion pass.",
+	["claim a plot"] = "Claim a plot first.",
+	["no club"] = "Start a club first.",
+	["facing"] = "Turn the piece with Face.",
+	["empty"] = "That square is already empty.",
+}
 
 local function call(name, a, b, c, d)
 	local result = actionRemote:InvokeServer(name, a, b, c, d)
@@ -174,7 +195,9 @@ titleCard.AnchorPoint = Vector2.new(0.5, 0.5)
 titleCard.Position = UDim2.fromScale(0.5, 0.5)
 titleCard.Size = UDim2.fromOffset(420, 300)
 titleCard.ZIndex = 2
-label(titleCard, "A FOOTBALL GROUND", 13, GREEN).Position = UDim2.fromOffset(28, 28)
+local kicker = label(titleCard, "A FOOTBALL GROUND", 13, GREEN)
+kicker.Position = UDim2.fromOffset(28, 28)
+kicker.Size = UDim2.new(1, -56, 0, 18)
 local titleHeading = label(titleCard, "ITTY BITTY\nSTADIUM", 40, INK)
 titleHeading.Position = UDim2.fromOffset(28, 50)
 titleHeading.Size = UDim2.new(1, -56, 0, 96)
@@ -192,7 +215,9 @@ clubCard.Position = UDim2.fromScale(0.5, 0.5)
 clubCard.Size = UDim2.fromOffset(640, 280)
 clubCard.Visible = false
 clubCard.ZIndex = 2
-label(clubCard, "Your club", 28, INK).Position = UDim2.fromOffset(24, 18)
+local clubHeading = label(clubCard, "Your club", 28, INK)
+clubHeading.Position = UDim2.fromOffset(24, 18)
+clubHeading.Size = UDim2.fromOffset(280, 34)
 
 local continueTitle = label(clubCard, "No save this visit", 18, INK)
 continueTitle.Position = UDim2.fromOffset(24, 70)
@@ -211,7 +236,9 @@ plotCard.Position = UDim2.fromScale(0.5, 0.5)
 plotCard.Size = UDim2.fromOffset(760, 460)
 plotCard.Visible = false
 plotCard.ZIndex = 2
-label(plotCard, "Select a plot", 26, INK).Position = UDim2.fromOffset(24, 16)
+local plotTitle = label(plotCard, "Select a plot", 26, INK)
+plotTitle.Position = UDim2.fromOffset(24, 16)
+plotTitle.Size = UDim2.fromOffset(320, 32)
 local plotHint = label(plotCard, "Six grounds. An open plot is yours.", 14, MUTED)
 plotHint.Position = UDim2.fromOffset(24, 50)
 plotHint.Size = UDim2.fromOffset(400, 22)
@@ -224,7 +251,9 @@ for index = 1, 6 do
 	local card = panel(plotCard, PAPER)
 	card.Position = UDim2.fromOffset(24 + column * 240, 88 + row * 170)
 	card.Size = UDim2.fromOffset(224, 154)
-	label(card, "Plot " .. index, 18, INK).Position = UDim2.fromOffset(14, 12)
+	local plotName = label(card, "Plot " .. index, 18, INK)
+	plotName.Position = UDim2.fromOffset(14, 12)
+	plotName.Size = UDim2.new(1, -28, 0, 24)
 	local owner = label(card, "Open", 14, MUTED)
 	owner.Position = UDim2.fromOffset(14, 44)
 	owner.Size = UDim2.new(1, -28, 0, 36)
@@ -240,6 +269,7 @@ local top = Instance.new("Frame")
 top.Size = UDim2.fromScale(1, 1)
 top.BackgroundTransparency = 1
 top.Visible = false
+top.Active = false
 top.Parent = gui
 
 local function pill(text, colour, x)
@@ -265,6 +295,8 @@ statusLabel.TextXAlignment = Enum.TextXAlignment.Center
 statusLabel.BackgroundColor3 = INK
 statusLabel.BackgroundTransparency = 0.15
 corner(statusLabel, 10)
+statusLabel.Visible = false
+statusLabel.Active = false
 
 local sideCard = panel(top, CREAM)
 sideCard.AnchorPoint = Vector2.new(1, 0)
@@ -284,7 +316,10 @@ sideBody.TextYAlignment = Enum.TextYAlignment.Top
 local dock = panel(top, CREAM)
 dock.AnchorPoint = Vector2.new(0.5, 1)
 dock.Position = UDim2.new(0.5, 0, 1, -16)
-dock.Size = UDim2.fromOffset(920, 168)
+dock.Size = UDim2.new(0.94, 0, 0, 176)
+local dockLimit = Instance.new("UISizeConstraint")
+dockLimit.MaxSize = Vector2.new(1040, 176)
+dockLimit.Parent = dock
 local buildHeader = label(dock, "Grass    £250", 16, INK)
 buildHeader.Position = UDim2.fromOffset(16, 10)
 buildHeader.Size = UDim2.new(1, -32, 0, 22)
@@ -294,11 +329,21 @@ groupRow.BackgroundTransparency = 1
 groupRow.Position = UDim2.fromOffset(16, 38)
 groupRow.Size = UDim2.new(1, -32, 0, 34)
 groupRow.Parent = dock
-local pieceRow = Instance.new("Frame")
+local pieceRow = Instance.new("ScrollingFrame")
 pieceRow.BackgroundTransparency = 1
-pieceRow.Position = UDim2.fromOffset(16, 78)
-pieceRow.Size = UDim2.new(1, -32, 0, 36)
+pieceRow.BorderSizePixel = 0
+pieceRow.Position = UDim2.fromOffset(16, 76)
+pieceRow.Size = UDim2.new(1, -32, 0, 40)
+pieceRow.ScrollBarThickness = 4
+pieceRow.ScrollingDirection = Enum.ScrollingDirection.X
+pieceRow.AutomaticCanvasSize = Enum.AutomaticSize.X
+pieceRow.CanvasSize = UDim2.fromOffset(0, 0)
 pieceRow.Parent = dock
+local pieceLayout = Instance.new("UIListLayout")
+pieceLayout.FillDirection = Enum.FillDirection.Horizontal
+pieceLayout.Padding = UDim.new(0, 8)
+pieceLayout.SortOrder = Enum.SortOrder.LayoutOrder
+pieceLayout.Parent = pieceRow
 local toolRow = Instance.new("Frame")
 toolRow.BackgroundTransparency = 1
 toolRow.Position = UDim2.fromOffset(16, 122)
@@ -308,12 +353,23 @@ toolRow.Parent = dock
 local hint = label(top, "Point at your land to build", 14, INK)
 hint.AnchorPoint = Vector2.new(0.5, 1)
 hint.Position = UDim2.new(0.5, 0, 1, -196)
-hint.Size = UDim2.fromOffset(280, 32)
+hint.Size = UDim2.fromOffset(560, 36)
+hint.TextWrapped = true
 hint.BackgroundColor3 = CREAM
 hint.BackgroundTransparency = 0
 hint.TextXAlignment = Enum.TextXAlignment.Center
 hint.Font = Enum.Font.Gotham
+hint.Active = false
 corner(hint, 10)
+
+local HINTS = {
+	grass = "Click the pale squares. Keep the grass as one rectangle.",
+	goal = "One goal in the middle of each end, facing onto the pitch.",
+	stand_small = "Stands snap to the touchline once the pitch is valid.",
+	stand_medium = "Stands snap to the touchline once the pitch is valid.",
+	stand_corner = "Corner stands snap to the four corners of the pitch.",
+	stand_angle = "Angle stands snap to the ends of each touchline.",
+}
 
 local menu = Instance.new("Frame")
 menu.Size = UDim2.fromScale(1, 1)
@@ -422,7 +478,8 @@ local function applyResult(result)
 	if result.ok then
 		setStatus("")
 	else
-		setStatus(tostring(result.reason or "not allowed"), true)
+		local reason = tostring(result.reason or "not allowed")
+		setStatus(REASONS[reason] or reason, true)
 	end
 	if result.state ~= nil and result.state.lastMatch ~= nil then
 		local match = result.state.lastMatch
@@ -672,12 +729,15 @@ local function paintPieces()
 			paintPieces()
 		end)
 		chip.TextSize = 13
-		chip.Size = UDim2.fromOffset(108, 32)
-		chip.Position = UDim2.fromOffset((index - 1) * 114, 0)
+		chip.Size = UDim2.fromOffset(128, 32)
+		chip.LayoutOrder = index
 	end
 	local piece = Catalog.pieces[selectedKind]
 	if piece ~= nil then
 		buildHeader.Text = string.format("%s    £%s", pieceName(selectedKind), money(piece.cost))
+	end
+	if not removeMode then
+		hint.Text = HINTS[selectedKind] or "Point at the pale squares on your land."
 	end
 end
 
@@ -749,6 +809,16 @@ local function cellFromHit(hitPosition, plotModel)
 	local x = math.floor(delta.X / CELL) + 1
 	local y = math.floor(delta.Z / CELL) + 1
 	return x, y
+end
+
+local function inLand(x, y)
+	local profile = state.profile
+	if profile == nil or x == nil or y == nil then
+		return false
+	end
+	local width = profile.width or 12
+	local height = profile.height or 16
+	return x >= 1 and y >= 1 and x <= width and y <= height
 end
 
 local function refreshPlots()
@@ -890,8 +960,9 @@ RunService.RenderStepped:Connect(function()
 		return
 	end
 	local origin = plotModel.Origin
+	local legal = inLand(x, y)
 	ghost.Transparency = 0.4
-	ghost.Color = if removeMode then RED else GREEN
+	ghost.Color = if removeMode or not legal then RED else GREEN
 	ghost.CFrame = CFrame.new(origin.Position + Vector3.new((x - 0.5) * CELL, 0.6, (y - 0.5) * CELL))
 end)
 
@@ -912,6 +983,10 @@ UserInputService.InputBegan:Connect(function(input, processed)
 	end
 	local x, y = cellFromHit(mouse.Hit.Position, plotModel)
 	if x == nil then
+		return
+	end
+	if not inLand(x, y) then
+		setStatus(REASONS["out of bounds"], true)
 		return
 	end
 	if removeMode then
